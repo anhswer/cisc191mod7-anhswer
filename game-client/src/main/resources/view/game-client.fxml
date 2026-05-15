@@ -36,6 +36,9 @@
                 <ComboBox fx:id="difficultyComboBox"
                           prefWidth="120" />
             </HBox>
+
+            <Label fx:id="matchSummaryLabel" text="Summary: No match" />
+
         </VBox>
     </top>
 
