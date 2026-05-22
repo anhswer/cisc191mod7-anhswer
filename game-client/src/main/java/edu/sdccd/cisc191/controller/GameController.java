@@ -64,9 +64,7 @@ public class GameController {
         boolean ranked = rankedMatchCheckBox.isSelected();
 
         statusLabel.setText("Status: Joining match...");
-        matchLog.appendText("Joining " + (ranked ? "ranked" : "casual")
-                + " match as " + playerName
-                + " on " + difficulty + " difficulty...\n");
+        matchLog.appendText(buildJoinLogMessage(playerName, difficulty, ranked) + "\n");
 
         Task<JoinMatchResponse> task = grpcClient.joinMatchTask(
                 playerName,
@@ -191,7 +189,10 @@ public class GameController {
 
             if (matchSummaryLabel != null) {
                 matchSummaryLabel.setText("Summary: "
-                        + match.buildMatchSummary(difficultyComboBox.getValue(), rankedMatchCheckBox.isSelected()));
+                        + match.buildMatchSummary(
+                        difficultyComboBox.getValue(),
+                        rankedMatchCheckBox.isSelected()
+                ));
             }
         });
     }
@@ -210,7 +211,20 @@ public class GameController {
      * - Trim playerName and difficulty.
      */
     public static String buildJoinLogMessage(String playerName, String difficulty, boolean ranked) {
-        return "TODO: build join log message";
+
+        String resolvedPlayer = (playerName == null || playerName.isBlank())
+                ? "Player"
+                : playerName.trim();
+
+        String resolvedDifficulty = (difficulty == null || difficulty.isBlank())
+                ? "Normal"
+                : difficulty.trim();
+
+        String matchType = ranked ? "ranked" : "casual";
+
+        return "Joining " + matchType
+                + " match as " + resolvedPlayer
+                + " on " + resolvedDifficulty + " difficulty...";
     }
 
     /**
@@ -223,8 +237,15 @@ public class GameController {
      * - Otherwise, schedule it with Platform.runLater(action).
      */
     public static void runOnFxThread(Runnable action) {
-        if (action != null) {
+
+        if (action == null) {
+            return;
+        }
+
+        if (Platform.isFxApplicationThread()) {
             action.run();
+        } else {
+            Platform.runLater(action);
         }
     }
 
