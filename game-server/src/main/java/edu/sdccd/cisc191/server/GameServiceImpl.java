@@ -1,12 +1,6 @@
 package edu.sdccd.cisc191.server;
 
-import edu.sdccd.cisc191.grpc.GameServiceGrpc;
-import edu.sdccd.cisc191.grpc.JoinMatchRequest;
-import edu.sdccd.cisc191.grpc.JoinMatchResponse;
-import edu.sdccd.cisc191.grpc.MatchHistoryRequest;
-import edu.sdccd.cisc191.grpc.MatchHistoryResponse;
-import edu.sdccd.cisc191.grpc.MatchResultResponse;
-import edu.sdccd.cisc191.grpc.PlayMatchRequest;
+import edu.sdccd.cisc191.grpc.*;
 import io.grpc.stub.StreamObserver;
 
 import java.util.Map;
@@ -25,21 +19,23 @@ public class GameServiceImpl extends GameServiceGrpc.GameServiceImplBase {
             JoinMatchRequest request,
             StreamObserver<JoinMatchResponse> responseObserver
     ) {
-        String playerName = request.getPlayerName().isBlank()
+        String playerName = (request.getPlayerName() == null || request.getPlayerName().isBlank())
                 ? "Player"
-                : request.getPlayerName();
+                : request.getPlayerName().trim();
 
-        String difficulty = request.getDifficulty().isBlank()
+        String difficulty = (request.getDifficulty() == null || request.getDifficulty().isBlank())
                 ? "Normal"
-                : request.getDifficulty();
+                : request.getDifficulty().trim();
 
         boolean ranked = request.getRanked();
         String matchId = UUID.randomUUID().toString();
 
+        String opponentName = "Bot (" + difficulty + ")";
+
         ServerMatch match = new ServerMatch(
                 matchId,
                 playerName,
-                "Bot (" + difficulty + ")",
+                opponentName,
                 difficulty,
                 ranked
         );
@@ -47,12 +43,21 @@ public class GameServiceImpl extends GameServiceGrpc.GameServiceImplBase {
         matches.put(matchId, match);
         statistics.recordJoin();
 
+        String summary = buildJoinSummary(
+                matchId,
+                playerName,
+                opponentName,
+                difficulty,
+                ranked
+        );
+
         JoinMatchResponse response = JoinMatchResponse.newBuilder()
                 .setMatchId(matchId)
-                .setPlayerName(match.playerName())
-                .setOpponentName(match.opponentName())
-                .setMessage("Joined " + match.matchType() + " match " + matchId
-                        + " on " + difficulty + " difficulty. Click Play Match to let the server choose a winner.")
+                .setPlayerName(playerName)
+                .setOpponentName(opponentName)
+                .setMessage("Joined " + (ranked ? "ranked" : "casual")
+                        + " match on " + difficulty + " difficulty successfully")
+                .setSummary(summary)
                 .build();
 
         responseObserver.onNext(response);
@@ -60,18 +65,7 @@ public class GameServiceImpl extends GameServiceGrpc.GameServiceImplBase {
     }
 
     /**
-     * TODO 6: Complete this server-side summary helper, then use it in JoinMatchResponse
-     * after adding the new summary field to the .proto file.
-     *
-     * Expected format:
-     * Match match-001: Ada vs Bot (Hard, ranked)
-     *
-     * Requirements:
-     * - Use "No match" when matchId is null or blank.
-     * - Use "Player" when playerName is null or blank.
-     * - Use "Bot" when opponentName is null or blank.
-     * - Use "Normal" when difficulty is null or blank.
-     * - Use "ranked" when ranked is true, otherwise "casual".
+     * Server-side summary helper
      */
     public static String buildJoinSummary(
             String matchId,
@@ -80,7 +74,16 @@ public class GameServiceImpl extends GameServiceGrpc.GameServiceImplBase {
             String difficulty,
             boolean ranked
     ) {
-        return "TODO: build join summary";
+        if (matchId == null || matchId.isBlank()) {
+            return "No match";
+        }
+
+        String p = (playerName == null || playerName.isBlank()) ? "Player" : playerName.trim();
+        String o = (opponentName == null || opponentName.isBlank()) ? "Bot" : opponentName.trim();
+        String d = (difficulty == null || difficulty.isBlank()) ? "Normal" : difficulty.trim();
+        String type = ranked ? "ranked" : "casual";
+
+        return "Match " + matchId + ": " + p + " vs " + o + " (" + d + ", " + type + ")";
     }
 
     @Override
@@ -113,8 +116,8 @@ public class GameServiceImpl extends GameServiceGrpc.GameServiceImplBase {
                 .setWinnerName(winner)
                 .setLoserName(loser)
                 .setPlayerWon(playerWon)
-                .setMessage("Server result: " + winner + " defeated " + loser + " in a "
-                        + match.matchType() + " " + match.difficulty() + " match.")
+                .setMessage("Server result: " + winner + " defeated " + loser
+                        + " in a " + match.matchType() + " " + match.difficulty() + " match.")
                 .build();
 
         responseObserver.onNext(response);
@@ -126,9 +129,9 @@ public class GameServiceImpl extends GameServiceGrpc.GameServiceImplBase {
             MatchHistoryRequest request,
             StreamObserver<MatchHistoryResponse> responseObserver
     ) {
-        String playerName = request.getPlayerName().isBlank()
+        String playerName = (request.getPlayerName() == null || request.getPlayerName().isBlank())
                 ? "Player"
-                : request.getPlayerName();
+                : request.getPlayerName().trim();
 
         MatchHistoryResponse response = MatchHistoryResponse.newBuilder()
                 .addMatches(playerName + " vs Bot: Win")
