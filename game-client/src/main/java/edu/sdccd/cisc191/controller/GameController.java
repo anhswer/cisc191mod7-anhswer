@@ -200,6 +200,8 @@ public class GameController {
         String resolvedDifficulty =
                 (difficulty == null || difficulty.isBlank()) ? "Normal" : difficulty.trim();
 
+        String resolvedPlayer = (playerName == null || playerName.isBlank()) ? "Player" : playerName.trim();
+        String resolvedDifficulty = (difficulty == null || difficulty.isBlank()) ? "Normal" : difficulty.trim();
         String rankedLabel = ranked ? "ranked" : "casual";
 
         return "Joining " + rankedLabel + " match as " + resolvedPlayer
@@ -209,6 +211,9 @@ public class GameController {
     public static void runOnFxThread(Runnable action) {
         if (action == null) return;
 
+        if (action == null) {
+            return;
+        }
         if (Platform.isFxApplicationThread()) {
             action.run();
         } else {

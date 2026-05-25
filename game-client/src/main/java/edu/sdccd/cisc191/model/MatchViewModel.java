@@ -10,6 +10,7 @@ public class MatchViewModel {
     private boolean matchOver;
     private String winnerName = "";
 
+    // TODO 7: AtomicInteger for thread-safe completed match counting
     private final AtomicInteger completedMatchCount = new AtomicInteger(0);
 
     public String getMatchId() {
@@ -49,6 +50,11 @@ public class MatchViewModel {
     }
 
     public void recordCompletedMatchThreadSafely(String winnerName) {
+    /**
+     * TODO 7: Thread-safe completed match recording using AtomicInteger.
+     * AtomicInteger.incrementAndGet() is an atomic CAS operation — no race conditions.
+     */
+    public synchronized void recordCompletedMatchThreadSafely(String winnerName) {
         completedMatchCount.incrementAndGet();
         setWinnerName(winnerName);
         matchOver = true;
@@ -64,6 +70,13 @@ public class MatchViewModel {
 
     public String buildMatchSummary(String difficulty, boolean ranked) {
 
+    /**
+     * TODO 2: Build a short match summary for the JavaFX status label.
+     *
+     * Format: Match match-001: Ada vs Bot (Hard, ranked)
+     * Returns "No match" when no match has been joined.
+     */
+    public String buildMatchSummary(String difficulty, boolean ranked) {
         if (matchId == null || matchId.isBlank()) {
             return "No match";
         }
@@ -76,6 +89,11 @@ public class MatchViewModel {
         return "Match " + matchId + ": " +
                 player.getName() + " vs " + opponent.getName() +
                 " (" + safeDifficulty + ", " + matchType + ")";
+        String resolvedDifficulty = (difficulty == null || difficulty.isBlank()) ? "Normal" : difficulty.trim();
+        String rankedLabel = ranked ? "ranked" : "casual";
+
+        return "Match " + matchId + ": " + player.getName() + " vs " + opponent.getName()
+                + " (" + resolvedDifficulty + ", " + rankedLabel + ")";
     }
 
     public void resetLocalState() {

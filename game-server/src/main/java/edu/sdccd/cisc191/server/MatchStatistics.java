@@ -7,6 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * TODO 9: Uses AtomicInteger for lock-free, thread-safe counter increments.
  */
+*/
 
 public class MatchStatistics {
 
