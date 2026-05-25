@@ -8,21 +8,43 @@ import edu.sdccd.cisc191.service.GameGrpcClient;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 
 public class GameController {
 
-    @FXML private TextField playerNameField;
-    @FXML private Label statusLabel;
-    @FXML private Label playerLabel;
-    @FXML private Label opponentLabel;
-    @FXML private Label winnerLabel;
-    @FXML private Label matchSummaryLabel;
-    @FXML private TextArea matchLog;
-    @FXML private ComboBox<String> difficultyComboBox;
-    @FXML private CheckBox rankedMatchCheckBox;
+    @FXML
+    private TextField playerNameField;
+
+    @FXML
+    private Label statusLabel;
+
+    @FXML
+    private Label playerLabel;
+
+    @FXML
+    private Label opponentLabel;
+
+    @FXML
+    private Label winnerLabel;
+
+    @FXML
+    private Label matchSummaryLabel;
+
+    @FXML
+    private TextArea matchLog;
+
+    @FXML
+    private ComboBox<String> difficultyComboBox;
+
+    @FXML
+    private CheckBox rankedMatchCheckBox;
 
     private final MatchViewModel match = new MatchViewModel();
+
     private final GameGrpcClient grpcClient = new GameGrpcClient("localhost", 50051);
 
     @FXML
@@ -44,7 +66,8 @@ public class GameController {
         statusLabel.setText("Status: Joining match...");
         matchLog.appendText(buildJoinLogMessage(playerName, difficulty, ranked) + "\n");
 
-        Task<JoinMatchResponse> task = grpcClient.joinMatchTask(playerName, difficulty, ranked);
+        Task<JoinMatchResponse> task =
+                grpcClient.joinMatchTask(playerName, difficulty, ranked);
 
         task.setOnSucceeded(event -> {
             JoinMatchResponse response = task.getValue();
@@ -63,7 +86,7 @@ public class GameController {
 
         task.setOnFailed(event -> {
             statusLabel.setText("Status: Server unavailable");
-            matchLog.appendText("Could not join match.\n");
+            matchLog.appendText("Could not join match. Is the gRPC server running?\n");
             matchLog.appendText("Error: " + task.getException().getMessage() + "\n");
         });
 
@@ -73,26 +96,26 @@ public class GameController {
     @FXML
     private void handlePlayMatch() {
         if (!match.canPlayMatch()) {
-            matchLog.appendText("Join a match before playing.\n");
+            matchLog.appendText("Join a match before playing, or reset after a completed match.\n");
             return;
         }
 
         statusLabel.setText("Status: Playing match...");
         matchLog.appendText("Server is choosing a random winner...\n");
 
-        Task<MatchResultResponse> task = grpcClient.playMatchTask(
-                match.getMatchId(),
-                match.getPlayer().getName()
-        );
+        Task<MatchResultResponse> task =
+                grpcClient.playMatchTask(match.getMatchId(), match.getPlayer().getName());
 
         task.setOnSucceeded(event -> {
             MatchResultResponse response = task.getValue();
 
             match.recordCompletedMatchThreadSafely(response.getWinnerName());
 
-            statusLabel.setText(response.getPlayerWon()
-                    ? "Status: You won!"
-                    : "Status: You lost.");
+            statusLabel.setText(
+                    response.getPlayerWon()
+                            ? "Status: You won!"
+                            : "Status: You lost."
+            );
 
             matchLog.appendText(response.getMessage() + "\n");
             updateView();
@@ -111,9 +134,10 @@ public class GameController {
     private void handleLoadHistory() {
         String playerName = getPlayerName();
 
-        matchLog.appendText("Loading match history...\n");
+        matchLog.appendText("Loading match history from gRPC server...\n");
 
-        Task<MatchHistoryResponse> task = grpcClient.loadMatchHistoryTask(playerName);
+        Task<MatchHistoryResponse> task =
+                grpcClient.loadMatchHistoryTask(playerName);
 
         task.setOnSucceeded(event -> {
             MatchHistoryResponse response = task.getValue();
@@ -125,7 +149,7 @@ public class GameController {
         });
 
         task.setOnFailed(event -> {
-            matchLog.appendText("Could not load history.\n");
+            matchLog.appendText("Could not load match history.\n");
             matchLog.appendText("Error: " + task.getException().getMessage() + "\n");
         });
 
@@ -136,13 +160,13 @@ public class GameController {
     private void handleResetLocalView() {
         match.resetLocalState();
         statusLabel.setText("Status: Local view reset");
-        matchLog.appendText("Reset complete.\n");
+        matchLog.appendText("Local client view reset. Click Join Match for a new server match.\n");
         updateView();
     }
 
     private String getPlayerName() {
-        String name = playerNameField.getText();
-        return (name == null || name.isBlank()) ? "Player" : name.trim();
+        String typed = playerNameField.getText();
+        return (typed == null || typed.isBlank()) ? "Player" : typed.trim();
     }
 
     private void updateView() {
@@ -150,26 +174,36 @@ public class GameController {
             playerLabel.setText("Player: " + match.getPlayer().getName());
             opponentLabel.setText("Opponent: " + match.getOpponent().getName());
 
-            winnerLabel.setText(match.getWinnerName().isBlank()
-                    ? "Winner: TBD"
-                    : "Winner: " + match.getWinnerName());
+            String winner = match.getWinnerName();
+            winnerLabel.setText(
+                    (winner == null || winner.isBlank())
+                            ? "Winner: TBD"
+                            : "Winner: " + winner
+            );
 
             if (matchSummaryLabel != null) {
                 matchSummaryLabel.setText(
-                        "Summary: " + match.buildMatchSummary(
-                                difficultyComboBox.getValue(),
-                                rankedMatchCheckBox.isSelected()
-                        )
+                        "Summary: " +
+                                match.buildMatchSummary(
+                                        difficultyComboBox.getValue(),
+                                        rankedMatchCheckBox.isSelected()
+                                )
                 );
             }
         });
     }
 
     public static String buildJoinLogMessage(String playerName, String difficulty, boolean ranked) {
-        String p = (playerName == null || playerName.isBlank()) ? "Player" : playerName.trim();
-        String d = (difficulty == null || difficulty.isBlank()) ? "Normal" : difficulty.trim();
-        return "Joining " + (ranked ? "ranked" : "casual")
-                + " match as " + p + " on " + d + " difficulty...";
+        String resolvedPlayer =
+                (playerName == null || playerName.isBlank()) ? "Player" : playerName.trim();
+
+        String resolvedDifficulty =
+                (difficulty == null || difficulty.isBlank()) ? "Normal" : difficulty.trim();
+
+        String rankedLabel = ranked ? "ranked" : "casual";
+
+        return "Joining " + rankedLabel + " match as " + resolvedPlayer
+                + " on " + resolvedDifficulty + " difficulty...";
     }
 
     public static void runOnFxThread(Runnable action) {
@@ -183,8 +217,8 @@ public class GameController {
     }
 
     private void runInBackground(Task<?> task) {
-        Thread t = new Thread(task);
-        t.setDaemon(true);
-        t.start();
+        Thread thread = new Thread(task);
+        thread.setDaemon(true);
+        thread.start();
     }
 }

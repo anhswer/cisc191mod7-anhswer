@@ -1,6 +1,5 @@
 package edu.sdccd.cisc191.server;
 
-import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
@@ -13,7 +12,7 @@ public class GameServerMain {
     public static void main(String[] args) throws IOException, InterruptedException {
         Server server = ServerBuilder
                 .forPort(PORT)
-                .addService((BindableService) new GameServiceImpl())
+                .addService(new GameServiceImpl())
                 .build();
 
         server.start();

@@ -5,10 +5,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class MatchViewModel {
 
     private String matchId;
-
     private final Player player = new Player("Player");
     private final Player opponent = new Player("Opponent");
-
     private boolean matchOver;
     private String winnerName = "";
 
@@ -50,10 +48,7 @@ public class MatchViewModel {
         return completedMatchCount.get();
     }
 
-    /**
-     * Thread-safe update for completed matches.
-     */
-    public synchronized void recordCompletedMatchThreadSafely(String winnerName) {
+    public void recordCompletedMatchThreadSafely(String winnerName) {
         completedMatchCount.incrementAndGet();
         setWinnerName(winnerName);
         matchOver = true;
@@ -67,25 +62,20 @@ public class MatchViewModel {
         return hasJoinedMatch() && !matchOver;
     }
 
-    /**
-     * Build match summary for UI.
-     */
     public String buildMatchSummary(String difficulty, boolean ranked) {
 
         if (matchId == null || matchId.isBlank()) {
             return "No match";
         }
 
-        String resolvedDifficulty =
+        String safeDifficulty =
                 (difficulty == null || difficulty.isBlank()) ? "Normal" : difficulty.trim();
 
-        String rankedLabel = ranked ? "ranked" : "casual";
+        String matchType = ranked ? "ranked" : "casual";
 
-        return "Match " + matchId + ": "
-                + player.getName()
-                + " vs "
-                + opponent.getName()
-                + " (" + resolvedDifficulty + ", " + rankedLabel + ")";
+        return "Match " + matchId + ": " +
+                player.getName() + " vs " + opponent.getName() +
+                " (" + safeDifficulty + ", " + matchType + ")";
     }
 
     public void resetLocalState() {

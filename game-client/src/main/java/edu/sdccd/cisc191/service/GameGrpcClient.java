@@ -33,28 +33,25 @@ public class GameGrpcClient {
         return new Task<>() {
             @Override
             protected JoinMatchResponse call() {
-                JoinMatchRequest request =
-                        buildJoinMatchRequest(playerName, difficulty, ranked);
-
+                JoinMatchRequest request = buildJoinMatchRequest(playerName, difficulty, ranked);
                 return blockingStub.joinMatch(request);
             }
         };
     }
 
-    public static JoinMatchRequest buildJoinMatchRequest(
-            String playerName,
-            String difficulty,
-            boolean ranked
-    ) {
-        String resolvedPlayer =
-                (playerName == null || playerName.isBlank())
-                        ? "Player"
-                        : playerName.trim();
-
-        String resolvedDifficulty =
-                (difficulty == null || difficulty.isBlank())
-                        ? "Normal"
-                        : difficulty.trim();
+    /**
+     * TODO 4: Complete this client-side gRPC helper, then use it from joinMatchTask.
+     *
+     * Requirements:
+     * - Build and return a JoinMatchRequest.
+     * - Use "Player" when playerName is null or blank.
+     * - Use "Normal" when difficulty is null or blank.
+     * - Trim playerName and difficulty.
+     * - Preserve the ranked value.
+     */
+    public static JoinMatchRequest buildJoinMatchRequest(String playerName, String difficulty, boolean ranked) {
+        String resolvedPlayer = (playerName == null || playerName.isBlank()) ? "Player" : playerName.trim();
+        String resolvedDifficulty = (difficulty == null || difficulty.isBlank()) ? "Normal" : difficulty.trim();
 
         return JoinMatchRequest.newBuilder()
                 .setPlayerName(resolvedPlayer)
@@ -70,14 +67,9 @@ public class GameGrpcClient {
         return new Task<>() {
             @Override
             protected MatchResultResponse call() {
-
                 PlayMatchRequest request = PlayMatchRequest.newBuilder()
                         .setMatchId(matchId)
-                        .setPlayerName(
-                                (playerName == null || playerName.isBlank())
-                                        ? "Player"
-                                        : playerName.trim()
-                        )
+                        .setPlayerName(playerName)
                         .build();
 
                 return blockingStub.playMatch(request);
@@ -89,13 +81,8 @@ public class GameGrpcClient {
         return new Task<>() {
             @Override
             protected MatchHistoryResponse call() {
-
                 MatchHistoryRequest request = MatchHistoryRequest.newBuilder()
-                        .setPlayerName(
-                                (playerName == null || playerName.isBlank())
-                                        ? "Player"
-                                        : playerName.trim()
-                        )
+                        .setPlayerName(playerName)
                         .build();
 
                 return blockingStub.loadMatchHistory(request);
